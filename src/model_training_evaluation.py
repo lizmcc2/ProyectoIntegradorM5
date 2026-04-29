@@ -1,6 +1,7 @@
 # librerias
 
 import pandas as pd
+import matplotlib.pyplot as plt
 from cargar_datos import cargar_datos
 from ft_engineering import limpiar_datos, crear_features, preparar_datos_modelo
 from sklearn.model_selection import train_test_split
@@ -44,6 +45,34 @@ preprocessor = ColumnTransformer(
     ]
 )
 
+# FUNCIONES AUXILIARES
+# =========================
+
+def build_model(model, preprocessor):
+    return Pipeline(steps=[
+        ("preprocessor", preprocessor),
+        ("model", model)
+    ])
+
+def summarize_classification(nombre, threshold, y_test, y_pred, y_proba=None):
+
+    from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
+
+    resultados = {
+        "Modelo": nombre,
+        "Threshold": threshold,
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Recall_0": recall_score(y_test, y_pred, pos_label=0),
+        "Recall_1": recall_score(y_test, y_pred, pos_label=1),
+        "F1_0": f1_score(y_test, y_pred, pos_label=0),
+        "F1_1": f1_score(y_test, y_pred, pos_label=1),
+    }
+
+    if y_proba is not None:
+        resultados["ROC_AUC"] = roc_auc_score(y_test, y_proba)
+
+    return resultados
+
 # MODELOS
 
 modelos = {
@@ -65,16 +94,15 @@ modelos = {
 
 thresholds = [0.5, 0.4, 0.3, 0.2]
 
+resultados = []
+
 for nombre, modelo in modelos.items():
 
     print("\n" + "="*50)
     print(f"MODELO: {nombre}")
     print("="*50)
 
-    pipeline = Pipeline(steps=[
-        ("preprocessor", preprocessor),
-        ("model", modelo)
-    ])
+    pipeline = build_model(modelo, preprocessor)
 
     # Entrenar
     pipeline.fit(X_train, y_train)
@@ -94,6 +122,16 @@ for nombre, modelo in modelos.items():
             print("-"*40)
 
             y_pred = (y_proba >= t).astype(int)
+            
+            resumen = summarize_classification(
+                nombre,
+                t,
+                y_test,
+                y_pred,
+                y_proba
+            )
+
+            resultados.append(resumen)
 
             print("\nClassification Report:")
             print(classification_report(y_test, y_pred))
@@ -103,3 +141,25 @@ for nombre, modelo in modelos.items():
 
     except:
         print("Este modelo no soporta predict_proba")
+
+df_resultados = pd.DataFrame(resultados)
+
+print("\n" + "="*50)
+print("TABLA RESUMEN FINAL")
+print("="*50)
+print(df_resultados)
+
+df_plot = df_resultados.sort_values("Recall_0", ascending=False).drop_duplicates("Modelo")
+df_plot = df_plot.set_index("Modelo")[["Recall_0", "Recall_1", "ROC_AUC"]]
+
+df_plot.plot(kind="bar")
+
+plt.title("Comparación de Modelos")
+plt.ylabel("Score")
+plt.xticks(rotation=0)
+plt.grid(True)
+
+plt.show()
+
+print("\nMejores configuraciones por modelo:")
+print(df_plot)
