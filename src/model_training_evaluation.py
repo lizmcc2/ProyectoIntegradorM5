@@ -96,6 +96,8 @@ thresholds = [0.5, 0.4, 0.3, 0.2]
 
 resultados = []
 
+pipelines_entrenados = {}
+
 for nombre, modelo in modelos.items():
 
     print("\n" + "="*50)
@@ -106,6 +108,8 @@ for nombre, modelo in modelos.items():
 
     # Entrenar
     pipeline.fit(X_train, y_train)
+    
+    pipelines_entrenados[nombre] = pipeline
 
     # Probabilidades
     try:
@@ -144,6 +148,19 @@ for nombre, modelo in modelos.items():
 
 df_resultados = pd.DataFrame(resultados)
 
+# SELECCIÓN DEL MEJOR MODELO
+
+df_best_model = df_resultados.groupby("Modelo")["Recall_0"].mean().sort_values(ascending=False)
+
+print("\n" + "="*50)
+print("MEJOR MODELO SELECCIONADO")
+print("="*50)
+print(df_best_model)
+
+best_model_name = df_best_model.index[0]
+
+print(f"\nMejor modelo: {best_model_name}")
+
 print("\n" + "="*50)
 print("TABLA RESUMEN FINAL")
 print("="*50)
@@ -163,3 +180,18 @@ plt.show()
 
 print("\nMejores configuraciones por modelo:")
 print(df_plot)
+
+import pickle
+import os
+
+# Crear carpeta models si no existe
+os.makedirs("models", exist_ok=True)
+
+# Obtener el mejor pipeline
+best_pipeline = pipelines_entrenados[best_model_name]
+
+# Guardar modelo
+with open("models/modelo.pkl", "wb") as f:
+    pickle.dump(best_pipeline, f)
+
+print("\nModelo guardado en models/modelo.pkl")
