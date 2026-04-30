@@ -581,3 +581,177 @@ Acciones recomendadas según el estado detectado:
 - Re-entrenamiento (Retraining): Si más del 20% de las variables clave muestran drift crítico.  
 - Ajuste de Thresholds: Revisar los puntos de corte de decisión si el perfil de riesgo de la población se ha desplazado pero la relación con el target sigue siendo similar.  
 - Auditoría de Ingesta: Verificar si el drift es causado por cambios en la calidad de los datos de entrada.  
+
+# 🚀 Despliegue del Modelo de Machine Learning
+
+En esta fase del proyecto se implementó el proceso completo de **despliegue de un modelo de Machine Learning**, asegurando que el modelo entrenado pueda ser consumido como un servicio a través de una API.
+
+El objetivo principal fue garantizar que el modelo no solo funcione en un entorno de desarrollo, sino que también esté preparado para ser utilizado en un entorno productivo de forma eficiente, escalable y mantenible.
+
+---
+
+## 🧠 1. Separación de responsabilidades
+
+Uno de los aspectos más importantes en esta etapa fue la organización del código bajo una arquitectura modular, separando claramente las responsabilidades en tres componentes principales:
+
+### 🔹 Feature Engineering (`ft_engineering.py`)
+Este archivo contiene exclusivamente funciones reutilizables:
+
+- `limpiar_datos()`: aplica reglas de limpieza definidas en el EDA.
+- `crear_features()`: genera nuevas variables derivadas.
+- `preparar_datos_modelo()`: separa variables predictoras y objetivo.
+- `preparar_datos_inferencia()`: adapta los datos para predicción en producción.
+
+📌 **Decisión clave:**  
+Se eliminó cualquier ejecución de código (entrenamiento o carga de datos) dentro de este archivo para evitar efectos secundarios al momento de ser importado por la API.
+
+---
+
+### 🔹 Entrenamiento del modelo (`model_training.py`)
+En este script se ejecuta todo el flujo de entrenamiento:
+
+- Carga de datos  
+- Limpieza y transformación  
+- División Train/Test  
+- Construcción del pipeline (preprocesamiento + modelo)  
+- Evaluación del modelo  
+- Serialización del modelo en formato `.pkl`  
+
+El modelo final se guarda en:
+
+(`/models/modelo.pkl`)
+
+Esto permite desacoplar completamente el entrenamiento del proceso de inferencia.
+
+---
+
+### 🔹 Despliegue del modelo (`model_deploy.py`)
+Este script constituye el núcleo del despliegue y cumple con los siguientes objetivos:
+
+#### ✔ Carga del modelo entrenado
+
+El modelo previamente serializado es cargado al iniciar la aplicación:
+
+```python
+with open("../models/modelo.pkl", "rb") as f:
+    modelo = pickle.load(f)
+```
+
+Esto permite desacoplar completamente el entrenamiento del proceso de inferencia.
+
+---
+
+### 🔹 Despliegue del modelo (`model_deploy.py`)
+Este script constituye el núcleo del despliegue y cumple con los siguientes objetivos:
+
+#### ✔ Carga del modelo entrenado
+
+El modelo previamente serializado es cargado al iniciar la aplicación:
+
+```python
+with open("../models/modelo.pkl", "rb") as f:
+    modelo = pickle.load(f)
+```
+#### ✔ Definición de la lógica de predicción
+
+La API recibe datos en formato JSON, los transforma utilizando las mismas funciones del entrenamiento y genera predicciones:
+
+```pytho
+df = pd.DataFrame(input_data.data)
+X, _, _ = preparar_datos_inferencia(df)
+pred = modelo.predict(X)
+```
+Esto garantiza consistencia entre entrenamiento e inferencia.
+
+#### ✔ Exposición como servicio (FastAPI)
+
+Se implementó una API utilizando FastAPI con los siguientes endpoints:
+
+GET / → verificación de estado
+GET /saludo → endpoint de prueba
+POST /predict → predicción del modelo
+
+### ✔ Soporte para predicción por lotes
+
+El endpoint /predict permite recibir múltiples registros en una sola solicitud:
+
+{
+  "data": [
+    { ... },
+    { ... }
+  ]
+}
+
+Esto habilita escenarios de uso más realistas en producción.
+
+## ⚙️ 2. Ejecución de la API
+
+La API se ejecuta utilizando Uvicorn:
+```pytho
+uvicorn model_deploy:app --reload
+```
+Una vez iniciada, se puede acceder a la documentación interactiva en:
+http://127.0.0.1:8000/docs
+
+Desde allí es posible probar el endpoint /predict directamente.
+![API1](https://i.postimg.cc/bJjkn2wK/API1.png)
+
+
+### 3. Validación del despliegue
+
+Durante la ejecución se verificó que:
+
+El modelo se carga correctamente ✔
+No se ejecuta entrenamiento en producción ✔
+No hay dependencias innecesarias del dataset ✔
+El endpoint /predict responde correctamente ✔
+
+Ejemplo de respuesta: {
+  "predictions": [1]
+}
+![API2](https://i.postimg.cc/JhjBR45g/API2.png)
+
+### 4. Mejora clave implementada
+
+Inicialmente, el archivo de feature engineering contenía lógica de entrenamiento, lo que generaba problemas en el despliegue:
+
+Ejecución innecesaria al importar el módulo
+Errores por variables no definidas
+Consumo innecesario de recursos
+
+Solución aplicada:
+Se eliminó todo el código ejecutable, dejando únicamente funciones reutilizables.
+
+Esto permitió:
+
+Mejorar la estabilidad de la API
+Reducir el consumo de recursos
+Asegurar una arquitectura escalable
+
+### 5. Preparación para contenerización
+
+Con la API funcionando correctamente, el proyecto queda listo para su siguiente fase:
+
+Contenerización con Docker, incluyendo:
+
+Código fuente
+Dependencias (requirements.txt)
+Servidor (Uvicorn)
+Configuración (Dockerfile, .dockerignore)
+
+
+
+
+
+
+
+## 🎯 Conclusión
+
+El modelo ha sido desplegado exitosamente como un servicio funcional, cumpliendo con buenas prácticas de ingeniería:
+
+Separación de responsabilidades
+Reutilización de código
+Consistencia entre entrenamiento e inferencia
+Preparación para producción
+
+Este enfoque permite escalar fácilmente la solución y facilita su integración en sistemas reales.
