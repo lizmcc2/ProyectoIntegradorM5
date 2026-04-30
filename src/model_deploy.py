@@ -7,8 +7,7 @@ import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from ft_engineering import preparar_datos_inferencia
-
+from src.ft_engineering import preparar_datos_inferencia
 
 # =========================
 # INICIALIZAR API

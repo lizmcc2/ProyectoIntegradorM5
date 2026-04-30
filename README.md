@@ -582,7 +582,7 @@ Acciones recomendadas según el estado detectado:
 - Ajuste de Thresholds: Revisar los puntos de corte de decisión si el perfil de riesgo de la población se ha desplazado pero la relación con el target sigue siendo similar.  
 - Auditoría de Ingesta: Verificar si el drift es causado por cambios en la calidad de los datos de entrada.  
 
-# 🚀 Despliegue del Modelo de Machine Learning
+# 📊 Avance 4: Despliegue del Modelo de Machine Learning
 
 En esta fase del proyecto se implementó el proceso completo de **despliegue de un modelo de Machine Learning**, asegurando que el modelo entrenado pueda ser consumido como un servicio a través de una API.
 
@@ -739,19 +739,99 @@ Dependencias (requirements.txt)
 Servidor (Uvicorn)
 Configuración (Dockerfile, .dockerignore)
 
+### ⚙️ Instalación local (sin Docker)
+1.	Crear entorno virtual:
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+2.	Instalar dependencias:
+pip install -r requirements.txt
+3.	Ejecutar la API:
+uvicorn src.model_deploy:app --reload
+________________________________________
+🌐 Uso de la API
+Endpoint base
+GET /
+Respuesta:
+{
+  "mensaje": "API de predicción funcionando."
+}
+________________________________________
+Endpoint de predicción
+POST /predict
+
+📥 Ejemplo de request
+
+![psd1](https://i.postimg.cc/Kz4mc0P8/postdock1.png)
 
 
+📤 Respuesta
 
+![psd2](https://i.postimg.cc/tRKnf6bY/postdock2.png)
+________________________________________
+🐳 Despliegue con Docker
+1. Construir la imagen
+docker build -t modelo-api .
+________________________________________
+2. Ejecutar el contenedor
+docker run -p 8000:8000 modelo-api
+O en segundo plano:
+docker run -d -p 8000:8000 modelo-api
+________________________________________
+3. Acceder a la API
+•	Swagger UI:
+http://localhost:8000/docs
+•	Endpoint base:
+http://localhost:8000/
+________________________________________
+🔄 Flujo de inferencia
+1.	El cliente envía datos en formato JSON
+2.	La API convierte los datos a DataFrame
+3.	Se aplican transformaciones (ft_engineering)
+4.	Se pasa al modelo entrenado
+5.	Se retorna la predicción
+________________________________________
+🧠 Tecnologías utilizadas
+•	Python 3.10
+•	FastAPI
+•	Uvicorn
+•	Scikit-learn
+•	Pandas
+•	Docker
+________________________________________
+📌 Consideraciones técnicas
+•	El modelo fue entrenado con un pipeline que incluye:
+o	Imputación de valores nulos
+o	Escalamiento de variables numéricas
+o	Codificación One-Hot para variables categóricas
+•	En producción:
+o	No se realiza entrenamiento
+o	Solo inferencia
+o	Se reutiliza el modelo serializado (.pkl)
 
+## 🎯 Conclusiones
 
+1. El uso de Docker permitió:
+Estandarizar el entorno de ejecución
+Evitar problemas de dependencias
+Facilitar la portabilidad del sistema
 
-## 🎯 Conclusión
+Esto convierte la solución en un componente fácilmente desplegable en entornos cloud.
 
-El modelo ha sido desplegado exitosamente como un servicio funcional, cumpliendo con buenas prácticas de ingeniería:
+2. Transformar el modelo en una API REST con FastAPI permitió:
 
-Separación de responsabilidades
-Reutilización de código
-Consistencia entre entrenamiento e inferencia
-Preparación para producción
+Consumir el modelo desde cualquier cliente
+Realizar predicciones en tiempo real
+Escalar la solución hacia arquitecturas más complejas
 
-Este enfoque permite escalar fácilmente la solución y facilita su integración en sistemas reales.
+3. Valor del enfoque end-to-end
+
+Este proyecto no solo aborda el modelado, sino todo el ciclo:
+
+Limpieza de datos
+Feature engineering
+Entrenamiento
+Evaluación
+Despliegue
+
+4. El proyecto demuestra la capacidad de llevar un modelo de Machine Learning desde su construcción hasta su despliegue en un entorno productivo, asegurando consistencia, escalabilidad y mantenibilidad.

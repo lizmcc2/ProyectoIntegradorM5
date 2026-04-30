@@ -3,7 +3,6 @@
 # librerias
 import pandas as pd
 import numpy as np
-from cargar_datos import cargar_datos
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
